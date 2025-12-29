@@ -1,5 +1,7 @@
 # 🧮 Koketso Swing Calculator
 
+![Calculator Screenshot](./screenshot.png)
+
 A simple yet vibrant Java Swing calculator application featuring basic arithmetic operations with a modern, clean GUI interface.
 
 ## ✨ Features
