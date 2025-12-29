@@ -103,35 +103,119 @@ public class ModernCalculator extends JFrame implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         String command = e.getActionCommand();
+        String currentText = displayField.getText();
 
-        if ((command.charAt(0) >= '0' && command.charAt(0) <= '9') || command.equals(".")) {
-            displayField.setText(displayField.getText() + command);
-        } else if (command.equals("C")) {
-            displayField.setText("");
-            num1 = num2 = result = 0;
-        } else if (command.equals("=")) {
-            num2 = Double.parseDouble(displayField.getText());
-            switch (operator) {
-                case '+': result = num1 + num2; break;
-                case '-': result = num1 - num2; break;
-                case '*': result = num1 * num2; break;
-                case '/': 
-                    if(num2 != 0) result = num1 / num2; 
-                    else JOptionPane.showMessageDialog(this, "Cannot divide by zero");
-                    break;
-                case '%': result = num1 % num2; break;
+        try {
+            // Number and decimal point input
+            if ((command.charAt(0) >= '0' && command.charAt(0) <= '9')) {
+                displayField.setText(currentText + command);
+            } 
+            else if (command.equals(".")) {
+                // Only add decimal if there isn't one already
+                if (!currentText.contains(".")) {
+                    if (currentText.isEmpty()) {
+                        displayField.setText("0.");
+                    } else {
+                        displayField.setText(currentText + ".");
+                    }
+                }
             }
-            displayField.setText(String.valueOf(result));
-            num1 = result;
-        } else if(command.equals("+/-")) {
-             double val = Double.parseDouble(displayField.getText());
-             displayField.setText(String.valueOf(val * -1));
-        } else {
-            if(!displayField.getText().isEmpty()) {
-                num1 = Double.parseDouble(displayField.getText());
-                operator = command.charAt(0);
+            // Clear button
+            else if (command.equals("C")) {
                 displayField.setText("");
+                num1 = num2 = result = 0;
+                operator = '\0';
             }
+            // Equals button
+            else if (command.equals("=")) {
+                if (!currentText.isEmpty() && operator != '\0') {
+                    num2 = Double.parseDouble(currentText);
+                    
+                    switch (operator) {
+                        case '+': result = num1 + num2; break;
+                        case '-': result = num1 - num2; break;
+                        case '*': result = num1 * num2; break;
+                        case '/': 
+                            if (num2 != 0) {
+                                result = num1 / num2;
+                            } else {
+                                JOptionPane.showMessageDialog(this, "Cannot divide by zero", "Error", JOptionPane.ERROR_MESSAGE);
+                                displayField.setText("");
+                                return;
+                            }
+                            break;
+                        case '%': result = num1 % num2; break;
+                    }
+                    
+                    // Format the result to remove unnecessary decimals
+                    if (result == (long) result) {
+                        displayField.setText(String.valueOf((long) result));
+                    } else {
+                        displayField.setText(String.format("%.8f", result).replaceAll("0*$", "").replaceAll("\\.$", ""));
+                    }
+                    
+                    num1 = result;
+                    operator = '\0';
+                }
+            }
+            // Plus/Minus toggle
+            else if (command.equals("+/-")) {
+                if (!currentText.isEmpty() && !currentText.equals("0")) {
+                    double val = Double.parseDouble(currentText);
+                    val *= -1;
+                    
+                    // Format the result
+                    if (val == (long) val) {
+                        displayField.setText(String.valueOf((long) val));
+                    } else {
+                        displayField.setText(String.valueOf(val));
+                    }
+                }
+            }
+            // Operator buttons (+, -, *, /, %)
+            else {
+                if (!currentText.isEmpty()) {
+                    // If there's a pending operation, calculate it first
+                    if (operator != '\0' && num1 != 0) {
+                        num2 = Double.parseDouble(currentText);
+                        
+                        switch (operator) {
+                            case '+': result = num1 + num2; break;
+                            case '-': result = num1 - num2; break;
+                            case '*': result = num1 * num2; break;
+                            case '/': 
+                                if (num2 != 0) {
+                                    result = num1 / num2;
+                                } else {
+                                    JOptionPane.showMessageDialog(this, "Cannot divide by zero", "Error", JOptionPane.ERROR_MESSAGE);
+                                    displayField.setText("");
+                                    operator = '\0';
+                                    num1 = 0;
+                                    return;
+                                }
+                                break;
+                            case '%': result = num1 % num2; break;
+                        }
+                        
+                        num1 = result;
+                        
+                        // Format and display the intermediate result
+                        if (result == (long) result) {
+                            displayField.setText(String.valueOf((long) result));
+                        } else {
+                            displayField.setText(String.format("%.8f", result).replaceAll("0*$", "").replaceAll("\\.$", ""));
+                        }
+                    } else {
+                        num1 = Double.parseDouble(currentText);
+                    }
+                    
+                    operator = command.charAt(0);
+                    displayField.setText("");
+                }
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid input", "Error", JOptionPane.ERROR_MESSAGE);
+            displayField.setText("");
         }
     }
 
