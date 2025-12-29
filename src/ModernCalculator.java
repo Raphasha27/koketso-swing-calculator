@@ -8,8 +8,10 @@ import java.awt.geom.RoundRectangle2D;
 public class ModernCalculator extends JFrame implements ActionListener {
 
     private JTextField displayField;
+    private JLabel equationLabel;
     private double num1 = 0, num2 = 0, result = 0;
     private char operator;
+    private String equation = "";
 
     // Colors
     private final Color COLOR_BG = new Color(33, 37, 41); // Dark Gray
@@ -21,11 +23,24 @@ public class ModernCalculator extends JFrame implements ActionListener {
 
     public ModernCalculator() {
         setTitle("Koketso Calculator");
-        setSize(400, 600);
+        setSize(400, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
         setLayout(new BorderLayout());
+
+        // Display Panel (contains equation and main display)
+        JPanel displayPanel = new JPanel();
+        displayPanel.setLayout(new BorderLayout());
+        displayPanel.setBackground(COLOR_DISPLAY);
+        
+        // Equation History Label
+        equationLabel = new JLabel(" ");
+        equationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        equationLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        equationLabel.setForeground(new Color(150, 150, 150)); // Gray text
+        equationLabel.setBorder(new EmptyBorder(10, 20, 5, 20));
+        displayPanel.add(equationLabel, BorderLayout.NORTH);
 
         // Display Screen
         displayField = new JTextField();
@@ -34,8 +49,10 @@ public class ModernCalculator extends JFrame implements ActionListener {
         displayField.setHorizontalAlignment(SwingConstants.RIGHT);
         displayField.setBackground(COLOR_DISPLAY);
         displayField.setForeground(COLOR_TEXT);
-        displayField.setBorder(new EmptyBorder(20, 20, 20, 20));
-        add(displayField, BorderLayout.NORTH);
+        displayField.setBorder(new EmptyBorder(5, 20, 20, 20));
+        displayPanel.add(displayField, BorderLayout.CENTER);
+        
+        add(displayPanel, BorderLayout.NORTH);
 
         // Button Panel
         JPanel buttonPanel = new JPanel();
@@ -56,7 +73,6 @@ public class ModernCalculator extends JFrame implements ActionListener {
 
             JButton btn = createModernButton(text);
             
-            // Assign functionality based on text (for special button spanning if needed, but grid makes it even)
             if (text.equals("=")) {
                 btn.setBackground(COLOR_BTN_EQ);
             } else if ("C".equals(text) || "+/-".equals(text) || "%".equals(text) || "/".equals(text) || "*".equals(text) || "-".equals(text) || "+".equals(text)) {
@@ -99,6 +115,15 @@ public class ModernCalculator extends JFrame implements ActionListener {
 
         return btn;
     }
+    
+    // Helper method to format numbers
+    private String formatNumber(double number) {
+        if (number == (long) number) {
+            return String.valueOf((long) number);
+        } else {
+            return String.format("%.8f", number).replaceAll("0*$", "").replaceAll("\\.$", "");
+        }
+    }
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -106,12 +131,12 @@ public class ModernCalculator extends JFrame implements ActionListener {
         String currentText = displayField.getText();
 
         try {
-            // Number and decimal point input
+            // Number input
             if ((command.charAt(0) >= '0' && command.charAt(0) <= '9')) {
                 displayField.setText(currentText + command);
             } 
+            // Decimal point
             else if (command.equals(".")) {
-                // Only add decimal if there isn't one already
                 if (!currentText.contains(".")) {
                     if (currentText.isEmpty()) {
                         displayField.setText("0.");
@@ -123,6 +148,8 @@ public class ModernCalculator extends JFrame implements ActionListener {
             // Clear button
             else if (command.equals("C")) {
                 displayField.setText("");
+                equationLabel.setText(" ");
+                equation = "";
                 num1 = num2 = result = 0;
                 operator = '\0';
             }
@@ -130,6 +157,10 @@ public class ModernCalculator extends JFrame implements ActionListener {
             else if (command.equals("=")) {
                 if (!currentText.isEmpty() && operator != '\0') {
                     num2 = Double.parseDouble(currentText);
+                    
+                    // Build equation string
+                    String num2Str = formatNumber(num2);
+                    equation = equation + num2Str + " = ";
                     
                     switch (operator) {
                         case '+': result = num1 + num2; break;
@@ -141,21 +172,23 @@ public class ModernCalculator extends JFrame implements ActionListener {
                             } else {
                                 JOptionPane.showMessageDialog(this, "Cannot divide by zero", "Error", JOptionPane.ERROR_MESSAGE);
                                 displayField.setText("");
+                                equationLabel.setText(" ");
+                                equation = "";
                                 return;
                             }
                             break;
                         case '%': result = num1 % num2; break;
                     }
                     
-                    // Format the result to remove unnecessary decimals
-                    if (result == (long) result) {
-                        displayField.setText(String.valueOf((long) result));
-                    } else {
-                        displayField.setText(String.format("%.8f", result).replaceAll("0*$", "").replaceAll("\\.$", ""));
-                    }
+                    // Format and display result
+                    String resultStr = formatNumber(result);
+                    equation += resultStr;
+                    equationLabel.setText(equation);
+                    displayField.setText(resultStr);
                     
                     num1 = result;
                     operator = '\0';
+                    equation = "";
                 }
             }
             // Plus/Minus toggle
@@ -163,13 +196,7 @@ public class ModernCalculator extends JFrame implements ActionListener {
                 if (!currentText.isEmpty() && !currentText.equals("0")) {
                     double val = Double.parseDouble(currentText);
                     val *= -1;
-                    
-                    // Format the result
-                    if (val == (long) val) {
-                        displayField.setText(String.valueOf((long) val));
-                    } else {
-                        displayField.setText(String.valueOf(val));
-                    }
+                    displayField.setText(formatNumber(val));
                 }
             }
             // Operator buttons (+, -, *, /, %)
@@ -178,6 +205,10 @@ public class ModernCalculator extends JFrame implements ActionListener {
                     // If there's a pending operation, calculate it first
                     if (operator != '\0' && num1 != 0) {
                         num2 = Double.parseDouble(currentText);
+                        
+                        // Build equation
+                        String num2Str = formatNumber(num2);
+                        equation = equation + num2Str + " ";
                         
                         switch (operator) {
                             case '+': result = num1 + num2; break;
@@ -189,6 +220,8 @@ public class ModernCalculator extends JFrame implements ActionListener {
                                 } else {
                                     JOptionPane.showMessageDialog(this, "Cannot divide by zero", "Error", JOptionPane.ERROR_MESSAGE);
                                     displayField.setText("");
+                                    equationLabel.setText(" ");
+                                    equation = "";
                                     operator = '\0';
                                     num1 = 0;
                                     return;
@@ -199,17 +232,20 @@ public class ModernCalculator extends JFrame implements ActionListener {
                         
                         num1 = result;
                         
-                        // Format and display the intermediate result
-                        if (result == (long) result) {
-                            displayField.setText(String.valueOf((long) result));
-                        } else {
-                            displayField.setText(String.format("%.8f", result).replaceAll("0*$", "").replaceAll("\\.$", ""));
-                        }
+                        // Update equation with intermediate result
+                        String resultStr = formatNumber(result);
+                        equation = resultStr + " ";
+                        equationLabel.setText(equation + command + " ");
+                        displayField.setText(resultStr);
                     } else {
                         num1 = Double.parseDouble(currentText);
+                        String num1Str = formatNumber(num1);
+                        equation = num1Str + " ";
                     }
                     
                     operator = command.charAt(0);
+                    equation += operator + " ";
+                    equationLabel.setText(equation);
                     displayField.setText("");
                 }
             }
